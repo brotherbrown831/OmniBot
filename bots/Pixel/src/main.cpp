@@ -27,7 +27,7 @@
 //        USER CONFIGURATION
 // ==========================================
 // Hub PC on your LAN (not 127.0.0.1 — the ESP32 must reach the machine running the hub).
-const char* backend_ip = "192.168.1.100";
+const char* backend_ip = "10.0.10.212";
 const int backend_port = 8000;
 
 #define BLE_SERVICE_NAME "Pixel"
@@ -2953,6 +2953,12 @@ static void enterWifiOfflineIdle() {
     loadRuntimeVisionFromPrefs();
 }
 
+// Hardcoded Wi-Fi fallback — used when no BLE-provisioned credentials exist.
+// Overridden by BLE provisioning (Preferences take priority).
+// EDIT THESE for your network before building.
+#define HARDCODED_WIFI_SSID ""
+#define HARDCODED_WIFI_PASS ""
+
 void setupWiFi() {
     preferences.begin("wifi_creds", true); 
     String saved_ssid = preferences.getString("ssid", "");
@@ -2961,8 +2967,9 @@ void setupWiFi() {
 
     saved_ssid.trim();
     if (saved_ssid.length() == 0) {
-        enterWifiOfflineIdle();
-        return;
+        Serial.println("[WiFi] No stored credentials — using hardcoded fallback");
+        saved_ssid = HARDCODED_WIFI_SSID;
+        saved_pass = HARDCODED_WIFI_PASS;
     }
     
     esp_wifi_set_max_tx_power(78); 
@@ -3263,6 +3270,9 @@ void setup() {
     
     pinMode(TFT_BL, OUTPUT); digitalWrite(TFT_BL, HIGH);
     gfx->begin(80000000); 
+    // Boot test: fill screen red for 2s so we can see if the display works
+    gfx->fillScreen(RED);
+    delay(2000);
     updateScreen("BOOTING...", WHITE);
     
     // Initialize native I2C for the CHSC6X Touch Controller & RTC (shared bus).
